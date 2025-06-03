@@ -10,6 +10,20 @@ count of the item after the operation.
 This barcode scanner is based on a common GM67 barcode scanner module, so many other handheld
 scanners will probably be compatible with this project.
 
+## Usage
+
+Pull the trigger to wake the scanner and power the M3Atom. Cycle through the "Add", "Sub" or
+"Zero" modes by pressing on the M3Atom screen. When in Add or Sub modes a single unit is added
+or subtracted from the inventory on each scan of an item. When in Zero mode the inventory count
+is set to zero when an item is scanned. Zero mode is the default.
+
+The new item count is displayed on the screen after the count is updated on the server. If an
+error occurs, or the scanned barcode is unrecognised, a question mark (?) is displayed instead
+of the count.
+
+Note that the count may have been modified even if a question mark is displayed, as it may be
+the retrieve-new-item-count server request that failed.
+
 ## Videos
 
 Overview: https://youtu.be/hvldrKMWksQ
