@@ -6,13 +6,17 @@ to help with household inventory tracking.
 ## Videos
 
 Overview: https://youtu.be/hvldrKMWksQ
+
 Internals: https://youtu.be/B08wy_exyug
 
 ## Parts
 
 Grocy: https://grocy.info/
+
 ESPHome: https://esphome.io/
+
 M5 AtomS3: https://shop.m5stack.com/products/atoms3-dev-kit-w-0-85-inch-screen
+
 Tecor IS-5700DB: https://www.ebay.com.au/itm/363631417793
 
 ## Setup
