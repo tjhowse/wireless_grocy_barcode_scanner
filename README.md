@@ -2,13 +2,14 @@
 
 ![A photo of the assembled scanner](scanner.jpg)
 
-This project uses Grocy, ESPHome, an M5 AtomS3 and a Tecor IS-5700DB handheld barcode scanner
+This project uses Grocy, ESPHome, an M5 AtomS3 ESP32 module and a Tecor IS-5700DB handheld barcode scanner
 to help with household inventory tracking. It connects to a Grocy instance via wifi and can
 add, subtract and zero the inventory count of scanned items. It also displays the current
 count of the item after the operation.
 
 This barcode scanner is based on a common GM67 barcode scanner module, so many other handheld
-scanners will probably be compatible with this project.
+scanners will probably be compatible with this project. The integration of the AtomS3 is
+non-destructive, so the existing functionality of the barcode scanner is preserved.
 
 ## Usage
 
