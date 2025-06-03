@@ -1,0 +1,63 @@
+# Wireless Grocy barcode scanner
+
+This project uses Grocy, ESPHome, an M5 AtomS3 and a Tecor IS-5700DB handheld barcode scanner
+to help with household inventory tracking.
+
+## Videos
+
+Overview: https://youtu.be/hvldrKMWksQ
+Internals: https://youtu.be/B08wy_exyug
+
+## Parts
+
+Grocy: https://grocy.info/
+ESPHome: https://esphome.io/
+M5 AtomS3: https://shop.m5stack.com/products/atoms3-dev-kit-w-0-85-inch-screen
+Tecor IS-5700DB: https://www.ebay.com.au/itm/363631417793
+
+## Setup
+
+Use ESPHome to flash the code into the AtomS3. You'll have to replace the `<snip>` bits
+from the code with your own passwords/OTA keys etc. You'll have to add `grocy_url` and
+`grocy_api_key` to your ESPHome `secrets.yaml`. The URL should look like
+`http://192.168.1.50`, pointing at the server hosting your grocy instance. You can generate
+the Grocy API key from inside the Grocy web interface.
+
+Note that I'm connecting directly to my Grocy server using its internal IP address rather
+than the web-facing `https` interface so as to avoid faffing about with TLS certificates
+on the microcontroller.
+
+## Physical wiring
+
+You'll need to locate three electrical connections on the carrier board inside the scanner:
+
+  * 3.3v power
+  * Ground
+  * Barcode TX
+
+If you're pointing the scanner away from you there is an unpopulated header on the back left
+of the board. You can find 3.3v power and ground here. Pick up the barcode TX from pin 5 on
+on the socket for the ribbon cable on the carrier board.
+
+![The wiring inside the barcode scanner](GM67-internals.jpg)
+![A sketch of the board](GM67-diagram.jpg)
+
+The barcode module seems to be based on the GM67 ([Datasheet](https://hubtronics.in/docs/GM67-Barcode-module.pdf)).
+
+![GM67 Pinout table](GM67-pinout.jpg)
+
+Connect the 3.3v and ground to the corresponding pins on the back face of the AtomS3. Connect
+the barcode TX to pin 8.
+
+Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise to the reader.
+
+## Limitations and future work
+
+  * As of 2025.5.1 there is a [bug](https://github.com/esphome/issues/issues/5949) in ESPHome's http_request that crashes when it receives a
+    large response body, so I'm using a custom component that overrides the built-in http_request
+    component with a fixed fork. Hopefully this workaround can be retired in the future.
+  * The screen contents are updated in a few places, which feels bad.
+  * Scans are not blocked before wifi is connected.
+  * The http_request blocks are awkward and repeated. I would like to put them into a modular function.
+  * I am using DynamicJsonDocument to deserialise the body of the quantity-getting GET request.
+    I'd rather use the built-in ESPHome deserialisation but it fails on big bodies.
