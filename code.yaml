@@ -1,0 +1,248 @@
+esphome:
+  name: barcode1
+  friendly_name: barcode1
+  on_boot:
+    then:
+      - select.last: mode
+      - lambda: |-
+          id(lcd).fill(colour_yellow);
+          uint8_t y = -${big_text};
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Waiting");
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "for");
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "WiFi");
+
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# TODO:
+# Single http post block
+# More elegant screen updating logic.
+
+# ESPHOME has problems with chunked HTTP responses:
+# https://github.com/esphome/issues/issues/5949
+external_components:
+  - source: github://hlfcode/esphome/esphome@main
+    components: [ http_request ]
+    refresh: 0s
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "<snip>"
+
+ota:
+  - platform: esphome
+    password: "<snip>"
+
+wifi:
+  ssid: !secret wifi_ssid_2
+  password: !secret wifi_password_2
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Barcode1 Fallback Hotspot"
+    password: "<snip>"
+  fast_connect: True
+  on_connect:
+    - select.last: mode
+
+captive_portal:
+
+http_request:
+  verify_ssl: false
+
+# The http_requests below show in error because the linter expects request_headers rather than
+# headers, however the alternate http_request external component I'm using expects the old
+# flavour. Once the stock http_request fixes the issue with crashing on capturing responses,
+# we can stop using the custom component.
+
+uart:
+   id: uart_bus
+   baud_rate: 9600
+  #  tx_pin: GPIO1
+   rx_pin: GPIO8
+   debug:
+    dummy_receiver: true
+    sequence:
+      - lambda: |-
+          std::string incoming(bytes.begin(), bytes.end());
+          id(barcode) = incoming;
+          id(quantity) = "?";
+      - if:
+          condition:
+            - lambda: return id(mode).state == "Zero";
+          then:
+            - http_request.post:
+                url: !lambda |-
+                  return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode)+"/inventory";
+                headers:
+                  Content-Type: application/json
+                  GROCY-API-KEY: ${grocy_api_key}
+                json:
+                  "new_amount": "0"
+          else:
+            - http_request.post:
+                url: !lambda |-
+                  std::string action("");
+                  if (id(mode).state == "Add") action = "add";
+                  if (id(mode).state == "Sub") action = "consume";
+                  return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode)+"/"+action;
+                headers:
+                  Content-Type: application/json
+                  GROCY-API-KEY: ${grocy_api_key}
+                json:
+                  "amount": "1"
+      - http_request.get:
+          url: !lambda |-
+            return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode);
+          capture_response: true
+          # Note: This buffer size is barely big enough. Sometimes the response is too big and won't fit.
+          # This means we'll get a quantity of "?", but the add/sub/zero action will still go through.
+          max_response_buffer_size: 3300
+          headers:
+            Content-Type: application/json
+            GROCY-API-KEY: ${grocy_api_key}
+          on_response:
+            then:
+              - lambda: |-
+                  DynamicJsonDocument doc(4096);
+                  deserializeJson(doc, body);
+                  if (!doc["stock_amount"].isNull()) {
+                    id(quantity) = doc["stock_amount"].as<std::string>();
+                  }
+          on_error:
+            - logger.log:
+                format: "Barcode not recognised."
+      - select.next: mode # This forces a refresh of the screen without having to repeat the screen drawing code here. Fix this.
+      - select.previous: mode
+
+substitutions:
+  # # ATOMS3 w/ screen
+  pin_lcd_rst: "GPIO34"
+  pin_lcd_mosi: "GPIO21"
+  pin_lcd_sck: "GPIO17"
+  pin_lcd_cs: "GPIO15"
+  pin_lcd_dc_rs: "GPIO33"
+  pin_lcd_bl: "GPIO16"
+  screen_width: "130"
+  screen_height: "129"
+  small_text: "12"
+  big_text: "30"
+  very_big_text: "60"
+  grocy_api_key: !secret grocy_api_key
+  grocy_url: !secret grocy_url
+
+globals:
+- id: barcode
+  type: std::string
+  initial_value: '""'
+- id: quantity
+  type: std::string
+  initial_value: '""'
+
+select:
+  - platform: template
+    id: mode
+    options:
+      - "Add"
+      - "Sub"
+      - "Zero"
+    optimistic: True
+    initial_option: "Zero"
+    set_action:
+      - logger.log:
+          format: "Chose option: %s"
+          args: ["x.c_str()"]
+      - lambda: |-
+          if (x == "Add") {
+              id(lcd).fill(colour_green);
+          } else if (x == "Sub") {
+              id(lcd).fill(colour_red);
+          } else  if (x == "Zero") {
+              id(lcd).fill(colour_blue);
+          }
+          //id(lcd).fill(COLOR_OFF);
+          uint8_t y = -${big_text};
+          id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Count:");
+          id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_very_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(quantity).c_str());
+
+spi:
+  - id: spi_lcd
+    clk_pin: ${pin_lcd_sck}
+    mosi_pin: ${pin_lcd_mosi}
+    interface: hardware
+
+
+font:
+
+  - file: 'OpenSans-Regular.ttf'
+    id: font_small
+    size: "${small_text}"
+  - file: 'OpenSans-Regular.ttf'
+    id: font_big
+    size: "${big_text}"
+  - file: 'OpenSans-Regular.ttf'
+    id: font_very_big
+    size: "${very_big_text}"
+
+color:
+  - id: colour_red
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: colour_green
+    red: 0%
+    green: 100%
+    blue: 0%
+  - id: colour_blue
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: colour_black
+    red: 0%
+    green: 0%
+    blue: 0%
+  - id: colour_yellow
+    red: 0%
+    green: 100%
+    blue: 50%
+
+binary_sensor:
+  - platform: gpio
+    pin: 41
+    id: btn_screen
+    on_press:
+      then:
+        - select.next: mode
+
+switch:
+  - platform: gpio
+    pin: ${pin_lcd_bl}
+    name: "Backlight"
+    id: backlight
+    restore_mode: ALWAYS_ON
+
+display:
+  - platform: ili9xxx
+    id: lcd
+    spi_id: spi_lcd
+    model: "M5STACK"
+    rotation: 180
+    update_interval: 100ms
+    dimensions:
+      height: ${screen_height}
+      width: ${screen_width}
+    cs_pin: ${pin_lcd_cs}
+    dc_pin: ${pin_lcd_dc_rs}
+    reset_pin: ${pin_lcd_rst}
+    invert_colors: true
+    data_rate: 40MHz # 80MHz doesn't work.
+    auto_clear_enabled: False
