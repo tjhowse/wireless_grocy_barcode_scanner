@@ -31,6 +31,8 @@ Overview: https://youtu.be/hvldrKMWksQ
 
 Internals: https://youtu.be/B08wy_exyug
 
+Improvements: https://youtu.be/t3d1Ac_AaTA
+
 ## Parts
 
 Grocy: https://grocy.info/
