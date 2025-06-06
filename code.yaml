@@ -139,8 +139,7 @@ uart:
           on_error:
             then:
               lambda: id(error) = "Net err";
-      - select.next: mode # This forces a refresh of the screen without having to repeat the screen drawing code here. Fix this.
-      - select.previous: mode
+      - component.update: lcd
 
 substitutions:
   # # ATOMS3 w/ screen
@@ -186,25 +185,7 @@ select:
     optimistic: True
     initial_option: "Zero"
     set_action:
-      - logger.log:
-          format: "Chose option: %s"
-          args: ["x.c_str()"]
-      - lambda: |-
-          if (x == "Add") {
-              id(lcd).fill(colour_green);
-          } else if (x == "Sub") {
-              id(lcd).fill(colour_red);
-          } else  if (x == "Zero") {
-              id(lcd).fill(colour_blue);
-          }
-          uint8_t y = -${big_text};
-          id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
-          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Count:");
-          if (id(error) == "") {
-            id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_very_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(quantity).c_str());
-          } else {
-            id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(error).c_str());
-          }
+      - component.update: lcd
 
 spi:
   - id: spi_lcd
@@ -278,3 +259,21 @@ display:
     invert_colors: true
     data_rate: 40MHz # 80MHz doesn't work.
     auto_clear_enabled: False
+    lambda: |-
+      std::string x;
+      x = id(mode).state;
+      if (x == "Add") {
+          id(lcd).fill(colour_green);
+      } else if (x == "Sub") {
+          id(lcd).fill(colour_red);
+      } else  if (x == "Zero") {
+          id(lcd).fill(colour_blue);
+      }
+      uint8_t y = -${big_text};
+      id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
+      id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Count:");
+      if (id(error) == "") {
+        id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_very_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(quantity).c_str());
+      } else {
+        id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(error).c_str());
+      }
