@@ -98,3 +98,4 @@ Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise 
     large response body, so I'm using a custom component that overrides the built-in http_request
     component with a fixed fork. Hopefully this workaround can be retired in the future.
   * Scans are not blocked before wifi is connected.
+  * Batch multiple rapid barcode scans into a single REST call.
