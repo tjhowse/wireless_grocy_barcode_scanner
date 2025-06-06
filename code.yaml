@@ -69,11 +69,16 @@ uart:
    rx_pin: GPIO8
    debug:
     dummy_receiver: true
+    after:
+      delimiter:
+        - 9 # AKA \t
     sequence:
       # This runs when we scan a barcode.
       # First we tell grocy that we're adding, removing or zeroing the count on an item
       - lambda: |-
           std::string incoming(bytes.begin(), bytes.end());
+          // Strip the delimiter character off the barcode.
+          incoming.pop_back();
           id(barcode) = incoming;
           id(quantity) = "?";
           id(error) = "";
