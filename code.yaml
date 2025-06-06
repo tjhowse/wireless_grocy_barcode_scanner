@@ -66,7 +66,6 @@ http_request:
 uart:
    id: uart_bus
    baud_rate: 9600
-  #  tx_pin: GPIO1
    rx_pin: GPIO8
    debug:
     dummy_receiver: true
@@ -103,9 +102,7 @@ uart:
           url: !lambda |-
             return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode);
           capture_response: true
-          # Note: This buffer size is barely big enough. Sometimes the response is too big and won't fit.
-          # This means we'll get a quantity of "?", but the add/sub/zero action will still go through.
-          max_response_buffer_size: 3300
+          max_response_buffer_size: 4096
           headers:
             Content-Type: application/json
             GROCY-API-KEY: ${grocy_api_key}
