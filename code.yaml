@@ -70,55 +70,52 @@ uart:
    debug:
     dummy_receiver: true
     sequence:
+      # This runs when we scan a barcode.
+      # First we tell grocy that we're adding, removing or zeroing the count on an item
       - lambda: |-
           std::string incoming(bytes.begin(), bytes.end());
           id(barcode) = incoming;
           id(quantity) = "?";
           id(error) = "";
-      - if:
-          condition:
-            - lambda: return id(mode).state == "Zero";
-          then:
-            - http_request.post:
-                url: !lambda |-
-                  return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode)+"/inventory";
-                headers:
-                  Content-Type: application/json
-                  GROCY-API-KEY: ${grocy_api_key}
-                json:
-                  "new_amount": "0"
-                on_response:
+          id(payload) = "{\"amount\": \"1\"}";
+
+          std::string action("");
+          if (id(mode).state == "Add") {
+            action = "add";
+          } else if (id(mode).state == "Sub") {
+            action = "consume";
+          } else {
+            action = "inventory";
+            id(payload) = "{\"new_amount\": \"0\"}";
+          }
+          id(url) = "${grocy_url}/api/stock/products/by-barcode/"+id(barcode)+"/"+action;
+      - http_request.post:
+          url: !lambda |-
+            return id(url).c_str();
+          capture_response: true
+          max_response_buffer_size: 4096
+          headers:
+            Content-Type: application/json
+            GROCY-API-KEY: ${grocy_api_key}
+          body: !lambda |-
+            return id(payload).c_str();
+          on_response:
+            then:
+              - if:
+                  condition:
+                      lambda: return response->status_code != 200;
                   then:
-                    - if:
-                        condition:
-                            lambda: return response->status_code != 200;
-                        then:
-                            - lambda: id(error) = "Bar err";
-                on_error:
-                  then:
-                    lambda: id(error) = "Net err";
-          else:
-            - http_request.post:
-                url: !lambda |-
-                  std::string action("");
-                  if (id(mode).state == "Add") action = "add";
-                  if (id(mode).state == "Sub") action = "consume";
-                  return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode)+"/"+action;
-                headers:
-                  Content-Type: application/json
-                  GROCY-API-KEY: ${grocy_api_key}
-                json:
-                  "amount": "1"
-                on_response:
-                  then:
-                    - if:
-                        condition:
-                            lambda: return response->status_code != 200;
-                        then:
-                            - lambda: id(error) = "Bar err";
-                on_error:
-                  then:
-                    lambda: id(error) = "Net err";
+                      # Grocy returns an error if we zero an already-zeroed product count.
+                      # The following only displays an error if an unknown barcode was
+                      # scanned. I don't care about the zero-on-zero error.
+                      - lambda: |-
+                          if (body.find("No product") != std::string::npos) {
+                            id(error) = "Bar err";
+                          }
+          on_error:
+            then:
+              lambda: id(error) = "Net err";
+      # Then we fetch the count of that item after the operation
       - http_request.get:
           url: !lambda |-
             return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode);
@@ -129,12 +126,16 @@ uart:
             GROCY-API-KEY: ${grocy_api_key}
           on_response:
             then:
-              - lambda: |-
-                  DynamicJsonDocument doc(4096);
-                  deserializeJson(doc, body);
-                  if (!doc["stock_amount"].isNull()) {
-                    id(quantity) = doc["stock_amount"].as<std::string>();
-                  }
+              - if:
+                  condition:
+                      lambda: return response->status_code == 200;
+                  then:
+                    - lambda: |-
+                        DynamicJsonDocument doc(4096);
+                        deserializeJson(doc, body);
+                        if (!doc["stock_amount"].isNull()) {
+                          id(quantity) = doc["stock_amount"].as<std::string>();
+                        }
           on_error:
             then:
               lambda: id(error) = "Net err";
@@ -167,6 +168,12 @@ globals:
 - id: error
   type: std::string
   initial_value: '""'
+- id: url
+  type: std::string
+  initial_value: '""'
+- id: payload
+  type: std::string
+  initial_value: '""'
 
 
 select:
@@ -190,7 +197,6 @@ select:
           } else  if (x == "Zero") {
               id(lcd).fill(colour_blue);
           }
-          //id(lcd).fill(COLOR_OFF);
           uint8_t y = -${big_text};
           id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
           id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Count:");
