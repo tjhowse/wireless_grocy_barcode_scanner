@@ -95,8 +95,4 @@ Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise 
   * As of 2025.5.1 there is a [bug](https://github.com/esphome/issues/issues/5949) in ESPHome's http_request that crashes when it receives a
     large response body, so I'm using a custom component that overrides the built-in http_request
     component with a fixed fork. Hopefully this workaround can be retired in the future.
-  * The screen contents are updated in a few places, which feels bad.
   * Scans are not blocked before wifi is connected.
-  * The http_request blocks are awkward and repeated. I would like to put them into a modular function.
-  * I am using DynamicJsonDocument to deserialise the body of the quantity-getting GET request.
-    I'd rather use the built-in ESPHome deserialisation but it fails on big bodies.
