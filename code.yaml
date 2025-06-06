@@ -74,6 +74,7 @@ uart:
           std::string incoming(bytes.begin(), bytes.end());
           id(barcode) = incoming;
           id(quantity) = "?";
+          id(error) = "";
       - if:
           condition:
             - lambda: return id(mode).state == "Zero";
@@ -86,6 +87,16 @@ uart:
                   GROCY-API-KEY: ${grocy_api_key}
                 json:
                   "new_amount": "0"
+                on_response:
+                  then:
+                    - if:
+                        condition:
+                            lambda: return response->status_code != 200;
+                        then:
+                            - lambda: id(error) = "Bar err";
+                on_error:
+                  then:
+                    lambda: id(error) = "Net err";
           else:
             - http_request.post:
                 url: !lambda |-
@@ -98,6 +109,16 @@ uart:
                   GROCY-API-KEY: ${grocy_api_key}
                 json:
                   "amount": "1"
+                on_response:
+                  then:
+                    - if:
+                        condition:
+                            lambda: return response->status_code != 200;
+                        then:
+                            - lambda: id(error) = "Bar err";
+                on_error:
+                  then:
+                    lambda: id(error) = "Net err";
       - http_request.get:
           url: !lambda |-
             return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode);
@@ -115,8 +136,8 @@ uart:
                     id(quantity) = doc["stock_amount"].as<std::string>();
                   }
           on_error:
-            - logger.log:
-                format: "Barcode not recognised."
+            then:
+              lambda: id(error) = "Net err";
       - select.next: mode # This forces a refresh of the screen without having to repeat the screen drawing code here. Fix this.
       - select.previous: mode
 
@@ -143,6 +164,10 @@ globals:
 - id: quantity
   type: std::string
   initial_value: '""'
+- id: error
+  type: std::string
+  initial_value: '""'
+
 
 select:
   - platform: template
@@ -169,7 +194,11 @@ select:
           uint8_t y = -${big_text};
           id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
           id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Count:");
-          id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_very_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(quantity).c_str());
+          if (id(error) == "") {
+            id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_very_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(quantity).c_str());
+          } else {
+            id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", id(error).c_str());
+          }
 
 spi:
   - id: spi_lcd
