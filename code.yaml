@@ -78,7 +78,7 @@ uart:
           // This count will be the number of repeated scans
           // in this stream. There's a chance multiple different
           // barcodes will be jumbled together, but it's unlikely.
-          int barcode_count = 1;
+          int barcode_count = 0;
           int first_tab_index = -1;
           for (int i = 0; i < incoming.length(); i++) {
             if (incoming[i] == '\t') {
