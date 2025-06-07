@@ -56,13 +56,15 @@ than the web-facing `https` interface so as to avoid faffing about with TLS cert
 on the microcontroller.
 
 Now you need to configure the GM67 module inside the barcode scanner to separate scanned
-barcodes with a tab character ('\t').
+barcodes with a tab character ('\t'). This prevents rapidly scanned barcodes being merged
+into one long, continuous barcode. This is only really a problem when quickly triggering
+scans on the same item.
 
     IMPORTANT NOTE!
     Some barcode scanners, including mine, have a "End Mark" configuration page in the manual.
     In my case this only affects the processing of the barcode signal between the GM67 module
     and the keyboard/bluetooth interface. We have tapped directly into the signal from the
-    GM67, so we need to configure it directly.
+    GM67, so we need to configure the GM67 directly.
 
 Scanning this barcode will configure the GM67 to add the tab character to the end of the barcode:
 
@@ -98,4 +100,3 @@ Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise 
     large response body, so I'm using a custom component that overrides the built-in http_request
     component with a fixed fork. Hopefully this workaround can be retired in the future.
   * Scans are not blocked before wifi is connected.
-  * Batch multiple rapid barcode scans into a single REST call.
