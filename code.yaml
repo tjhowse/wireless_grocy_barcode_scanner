@@ -3,28 +3,17 @@ esphome:
   friendly_name: barcode1
   on_boot:
     then:
-      - select.last: mode
-      - lambda: |-
-          id(lcd).fill(colour_yellow);
-          uint8_t y = -${big_text};
-          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Waiting");
-          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "for");
-          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "WiFi");
-
+    - component.update: lcd
 
 esp32:
   board: esp32-s3-devkitc-1
   framework:
     type: arduino
 
-# TODO:
-# Single http post block
-# More elegant screen updating logic.
-
 # ESPHOME has problems with chunked HTTP responses:
 # https://github.com/esphome/issues/issues/5949
 external_components:
-  - source: github://hlfcode/esphome/esphome@main
+  - source: github://hlfcode/esphome@For-V2025.5.2
     components: [ http_request ]
     refresh: 0s
 
@@ -42,6 +31,7 @@ ota:
     password: "<snip>"
 
 wifi:
+  id: wifi_client
   ssid: !secret wifi_ssid_2
   password: !secret wifi_password_2
 
@@ -51,17 +41,12 @@ wifi:
     password: "<snip>"
   fast_connect: True
   on_connect:
-    - select.last: mode
+    - component.update: lcd
 
 captive_portal:
 
 http_request:
   verify_ssl: false
-
-# The http_requests below show in error because the linter expects request_headers rather than
-# headers, however the alternate http_request external component I'm using expects the old
-# flavour. Once the stock http_request fixes the issue with crashing on capturing responses,
-# we can stop using the custom component.
 
 uart:
    id: uart_bus
@@ -107,7 +92,7 @@ uart:
             return id(url).c_str();
           capture_response: true
           max_response_buffer_size: 4096
-          headers:
+          request_headers:
             Content-Type: application/json
             GROCY-API-KEY: ${grocy_api_key}
           body: !lambda |-
@@ -134,7 +119,7 @@ uart:
             return "${grocy_url}/api/stock/products/by-barcode/"+id(barcode);
           capture_response: true
           max_response_buffer_size: 4096
-          headers:
+          request_headers:
             Content-Type: application/json
             GROCY-API-KEY: ${grocy_api_key}
           on_response:
@@ -262,7 +247,7 @@ display:
     spi_id: spi_lcd
     model: "M5STACK"
     rotation: 180
-    update_interval: 100ms
+    update_interval: 0s
     dimensions:
       height: ${screen_height}
       width: ${screen_width}
@@ -273,6 +258,15 @@ display:
     data_rate: 40MHz # 80MHz doesn't work.
     auto_clear_enabled: False
     lambda: |-
+      if (!id(wifi_client).is_connected()) {
+          id(lcd).fill(colour_yellow);
+          uint8_t y = -${big_text};
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "Waiting");
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "for");
+          id(lcd).print(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "WiFi");
+          return;
+      }
+
       std::string x;
       x = id(mode).state;
       if (x == "Add") {
