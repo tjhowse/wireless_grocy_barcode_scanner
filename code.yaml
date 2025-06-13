@@ -233,6 +233,18 @@ binary_sensor:
     on_press:
       then:
         - select.next: mode
+  - platform: gpio
+    pin:
+      number: GPIO7
+      mode:
+        input: true
+        pullup: true
+    id: btn_mode
+    filters:
+      - delayed_off: 50ms
+    on_press:
+      then:
+        - select.next: mode
 
 switch:
   - platform: gpio
