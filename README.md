@@ -94,6 +94,16 @@ the barcode TX to pin 8.
 
 Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise to the reader.
 
+### Optional mode button
+
+I superglued a small tactile microswitch on the handle of the scanner, drilling two 1.5mm holes through the handle
+to allow two of the legs of the microswitch to poke inside the handle. I clipped the other two legs off. I connected
+one of the legs to ground and the other to pin 7 on the AtomS3. This lets me cycle the scan mode without
+awkwardly reaching up to the screen with my thumb.
+
+I used some polymorph moldable thermoplastic to build up the area around the switch to fair out the curve, improving
+comfort and strength of the mounting.
+
 ## Limitations and future work
 
   * As of 2025.5.1 there is a [bug](https://github.com/esphome/issues/issues/5949) in ESPHome's http_request that crashes when it receives a
