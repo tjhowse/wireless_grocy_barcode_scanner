@@ -18,11 +18,11 @@ Pull the trigger to wake the scanner and power the M3Atom. Cycle through the "Ad
 or subtracted from the inventory on each scan of an item. When in Zero mode the inventory count
 is set to zero when an item is scanned. Zero mode is the default.
 
-The new item count is displayed on the screen after the count is updated on the server. If an
-error occurs, or the scanned barcode is unrecognised, a question mark (?) is displayed instead
-of the count.
+The new item count is displayed on the screen after the count is updated on the server. If a
+network error occurs, "Net Err" is displayed on the screen. If the barcode is unrecognised
+"Bar Err" is displayed.
 
-Note that the count may have been modified even if a question mark is displayed, as it may be
+Note that the count may have been modified even if "Net Err" is displayed, as it may be
 the retrieve-new-item-count server request that failed.
 
 ## Videos
