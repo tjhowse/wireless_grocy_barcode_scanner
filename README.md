@@ -96,6 +96,8 @@ Mechanically attaching the AtomS3 to the barcode scanner is left as an exercise 
 
 ### Optional mode button
 
+![A photo of the scanner showing a small black button on the side of the grip surrounded with white plastic](mode_button.jpg)
+
 I superglued a small tactile microswitch on the handle of the scanner, drilling two 1.5mm holes through the handle
 to allow two of the legs of the microswitch to poke inside the handle. I clipped the other two legs off. I connected
 one of the legs to ground and the other to pin 7 on the AtomS3. This lets me cycle the scan mode without
