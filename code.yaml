@@ -13,7 +13,8 @@ esp32:
 # ESPHOME has problems with chunked HTTP responses:
 # https://github.com/esphome/issues/issues/5949
 external_components:
-  - source: github://hlfcode/esphome@For-V2025.5.2
+  # Updated for 2025.11.2
+  - source: github://hlfcode/esphome@f8324b793040cdd6308db176c04f80777932398d
     components: [ http_request ]
     refresh: 0s
 
@@ -129,7 +130,7 @@ uart:
                       lambda: return response->status_code == 200;
                   then:
                     - lambda: |-
-                        DynamicJsonDocument doc(4096);
+                        JsonDocument doc;
                         deserializeJson(doc, body);
                         if (!doc["stock_amount"].isNull()) {
                           id(quantity) = doc["stock_amount"].as<std::string>();
