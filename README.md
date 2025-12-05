@@ -108,7 +108,7 @@ comfort and strength of the mounting.
 
 ## Limitations and future work
 
-  * As of 2025.5.1 there is a [bug](https://github.com/esphome/issues/issues/5949) in ESPHome's http_request that causes
+  * As of 2025.11.2 there is a [bug](https://github.com/esphome/issues/issues/5949) in ESPHome's http_request that causes
     a crash when it receives a large response body, so I'm using a custom component that overrides the built-in http_request
     component with a fixed fork. Hopefully this workaround can be retired in the future.
   * Scans are not blocked before wifi is connected.
