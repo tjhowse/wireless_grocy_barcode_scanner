@@ -83,6 +83,8 @@ uart:
             action = "add";
           } else if (id(mode).state == "Sub") {
             action = "consume";
+          } else if (id(mode).state == "Open") {
+            action = "open";
           } else {
             action = "inventory";
             id(payload) = "{\"new_amount\": \"0\"}";
@@ -181,6 +183,7 @@ select:
       - "Add"
       - "Sub"
       - "Zero"
+      - "Open"
     optimistic: True
     initial_option: "Zero"
     set_action:
@@ -226,6 +229,10 @@ color:
     red: 0%
     green: 100%
     blue: 50%
+  - id: colour_magenta
+    red: 100%
+    green: 0%
+    blue: 100%
 
 binary_sensor:
   - platform: gpio
@@ -288,6 +295,8 @@ display:
           id(lcd).fill(colour_red);
       } else  if (x == "Zero") {
           id(lcd).fill(colour_blue);
+      } else  if (x == "Open") {
+          id(lcd).fill(colour_magenta);
       }
       uint8_t y = -${big_text};
       id(lcd).printf(${screen_width}/2, y+=${big_text}, id(font_big), id(colour_black), TextAlign::TOP_CENTER,  "%s", x.c_str());
