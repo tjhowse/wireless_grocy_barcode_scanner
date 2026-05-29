@@ -95,8 +95,12 @@ func main() {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			client.Publish(prefix+"/error", 0, false, "Bar err")
-			return
+			// We only care about this error if "No product" is in the payload of the response. Otherwise ignore it
+			body, _ := io.ReadAll(resp.Body)
+			if strings.Contains(string(body), "No product") {
+				client.Publish(prefix+"/error", 2, false, "Bar err")
+				return
+			}
 		}
 
 		// Get the new inventory count
@@ -116,12 +120,7 @@ func main() {
 		defer getResp.Body.Close()
 
 		if getResp.StatusCode != http.StatusOK {
-			// We only care about this error if "No product" is in the payload of the response. Otherwise ignore it
-			body, _ := io.ReadAll(getResp.Body)
-			if strings.Contains(string(body), "No product") {
-				client.Publish(prefix+"/error", 2, false, "Bar err")
-				return
-			}
+			client.Publish(prefix+"/error", 2, false, "Net err")
 			return
 		}
 		body, err := io.ReadAll(getResp.Body)
@@ -138,6 +137,7 @@ func main() {
 		if newAmount, ok := result["stock_amount"].(float64); ok {
 			client.Publish(prefix+"/quantity", 2, false, fmt.Sprintf("%d", int(newAmount)))
 		} else {
+			fmt.Printf("Invalid stock_amount: %v\n", result["stock_amount"])
 			client.Publish(prefix+"/error", 2, false, "Bar err")
 		}
 	})
