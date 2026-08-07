@@ -137,6 +137,7 @@ func onConnectHandler(client mqtt.Client) {
 }
 
 func main() {
+	fmt.Printf("Starting grocy proxy with the following configuration:\nMQTT_BROKER=%s\nMQTT_USERNAME=%s\nGROCY_HOST=%s\nGROCY_API_KEY=%s\n", mqttBroker, mqttUsername, grocyHost, grocyApiKey)
 	opts := mqtt.NewClientOptions().AddBroker(mqttBroker).SetClientID(mqttClientId)
 	if mqttUsername != "" && mqttPassword != "" {
 		opts.SetUsername(mqttUsername)
